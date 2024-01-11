@@ -1,5 +1,5 @@
 import numpy as np
-from TSP_state import TSP_State
+from .TSP_state import TSP_State
 
 def generate_random_points_and_distance_matrix(num_points, dim=2):
     """
