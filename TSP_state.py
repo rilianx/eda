@@ -16,7 +16,7 @@ class TSP_State():
         self.visited = [0]
         self.moves = []
         self.cost = 0
-        self.not_visited = set()
+        self.not_visited = set(range(0, len(TSP_State.distance_matrix)))
 
         for visit in visited[1:]:
             self.transition(("constructive-move", visit), evaluate=False)
