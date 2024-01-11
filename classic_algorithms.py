@@ -33,6 +33,50 @@ class Greedy:
 
     return current_state
 
+class Parallel_Greedy: #agregando aleatoriedad en la elección
+  def __init__(self, evalConstructiveMoves, random=False, elite_factor=1.0):
+    self.evalConstructiveMoves = evalConstructiveMoves
+    self.random=random
+    self.elite_factor=elite_factor
+    if hasattr(evalConstructiveMoves, 'parallel_support'):
+      self.parallel_eval = True
+    else:
+      self.parallel_eval = False
+
+
+  def __call__(self, current_states):
+    while not [current_state.isCompleteSolution() for current_state in current_states] == [True]*len(current_states):
+        # Evaluate moves of non-complete solutions
+        uncomplete_states = [current_state for current_state in current_states if not current_state.isCompleteSolution()]
+
+        if self.parallel_eval == True:
+          scored_elements = self.evalConstructiveMoves(uncomplete_states)
+        
+
+        for k in range(len(uncomplete_states)):
+          if self.parallel_eval == True:
+            scores = scored_elements[k]
+          else:
+            scores = self.evalConstructiveMoves(uncomplete_states[k])
+
+          if self.random==True:
+            total_score = sum(score for _, score in scores)
+            normalized_scores = [(element, (score / total_score)**self.elite_factor) for element, score in scores]
+
+            best_move = random.choices([element for element, _ in normalized_scores],
+                                weights=[score for _, score in normalized_scores],
+                                k=1)[0]
+          else:
+            # Find the element with the highest score
+            best_move, _ = max(scores, key=lambda x: x[1])
+
+
+          # Realiza la transición al estado siguiente agregando la ciudad más cercana al tour
+          uncomplete_states[k].transition(best_move)
+
+    return current_states
+
+
 ## SLS (Stochastic Local Search)
 class SLS:
     def __init__(self, get_moves, first_improvement=True):
