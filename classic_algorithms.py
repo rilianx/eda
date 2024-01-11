@@ -4,8 +4,10 @@ import heapq
 
 ## GREEDY (constructive algorithm)
 class Greedy:
-  def __init__(self, evalConstructiveMoves):
+  def __init__(self, evalConstructiveMoves, random=False, elite_factor=1.0):
     self.evalConstructiveMoves = evalConstructiveMoves
+    self.random=random
+    self.elite_factor=elite_factor
 
   def __call__(self, initial_state):
     current_state = initial_state
@@ -14,8 +16,17 @@ class Greedy:
          # Evaluate moves and store their scores
         scored_elements = self.evalConstructiveMoves(current_state)
 
-        # Find the element with the highest score
-        best_move, _ = max(scored_elements, key=lambda x: x[1])
+        if self.random==True:
+          total_score = sum(score for _, score in scored_elements)
+          normalized_scores = [(element, (score / total_score)**self.elite_factor) for element, score in scored_elements]
+
+          best_move = random.choices([element for element, _ in normalized_scores],
+                              weights=[score for _, score in normalized_scores],
+                              k=1)[0]
+        else:
+          # Find the element with the highest score
+          best_move, _ = max(scored_elements, key=lambda x: x[1])
+
 
         # Realiza la transición al estado siguiente agregando la ciudad más cercana al tour
         current_state.transition(best_move)
