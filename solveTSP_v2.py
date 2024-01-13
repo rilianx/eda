@@ -36,7 +36,7 @@ def create_data_model(distance_matrix, scale_factor=10000, start_node=None, end_
     return data
 
 """Soluciona el TSP."""
-def solve(city_points, start_node=None, end_node=None):
+def solve(city_points, start_node=None, end_node=None, time_limit=0):
   distance_matrix = np.sqrt(np.sum((city_points[:, np.newaxis, :] - city_points[np.newaxis, :, :]) ** 2, axis=-1))
 
   data = create_data_model(distance_matrix, start_node=start_node, end_node=end_node)
@@ -58,6 +58,10 @@ def solve(city_points, start_node=None, end_node=None):
   search_parameters = pywrapcp.DefaultRoutingSearchParameters()
   search_parameters.first_solution_strategy = (
       routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+
+  if time_limit !=0:
+    search_parameters.time_limit.seconds = time_limit  # 300 segundos = 5 minutos
+
 
   # Resuelve el problema
   solution = routing.SolveWithParameters(search_parameters)
