@@ -8,7 +8,7 @@ from .solveTSP_v2 import generate_random_points_and_distance_matrix, solve, plot
 
 
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Dense, Lambda, Softmax, Layer
+from tensorflow.keras.layers import Input, Dense, Masking, TimeDistributed, Lambda, Softmax, Layer
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import MultiHeadAttention
 from tensorflow.keras import backend as K
@@ -21,19 +21,34 @@ class CustomMaskLayer(Layer):
         mask = tf.reduce_any(inputs != 0, axis=-1)
         mask = tf.expand_dims(tf.expand_dims(mask, 1), 1)
         return mask
-    
-def create_att_model(vec_len=6, num_heads=5, key_dim=32):
+
+class _2Dense(Layer):
+    def __init__(self, dense_size=64):
+        super(_2Dense,self).__init__()
+        self.shared_dense1 = Dense(units=dense_size, activation='tanh')
+        self.shared_dense2 = Dense(units=1, activation='tanh')
+
+    def call(self, input):
+      masked_output = Masking()(input)
+
+      output_dense1 = self.shared_dense1(masked_output)
+      output_dense2 = self.shared_dense2(output_dense1)
+      return output_dense2
+
+def create_att_model(vec_len=6, num_heads=5, key_dim=32, output_shape=32, dense_size=32):
 
     input_layer = Input(shape=(None,vec_len))
     mask_layer = CustomMaskLayer()(input_layer)
 
-    input_projection = input_layer #Dense(10, activation='tanh')(input_layer)
+    input_projection = input_layer
 
-    att = MultiHeadAttention(num_heads=num_heads, key_dim=key_dim, dropout=0.2, output_shape=1)(
+    att = MultiHeadAttention(num_heads=num_heads, key_dim=key_dim, dropout=0.2, output_shape=output_shape)(
         query=input_projection, value=input_projection, key=input_projection,
             attention_mask=mask_layer)
-
-    output = Softmax()(Lambda(lambda x: K.squeeze(x, -1))(att))
+    
+    output = TimeDistributed(_2Dense(dense_size=dense_size))(att)
+    
+    output = Softmax()(Lambda(lambda x: K.squeeze(x, -1))(output))
     model = Model(inputs=input_layer, outputs=output)
 
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
