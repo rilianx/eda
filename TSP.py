@@ -106,6 +106,9 @@ class GreedyAgent():
         self.eval_actions= eval_actions
         self.gen_actions= gen_actions
 
+    def reset(self):
+        pass
+
     def action_policy(self, state):
       evals = self.eval_actions(state, self.gen_actions)
       if len(evals)==0: return None
@@ -125,7 +128,10 @@ class StochasticGreedyAgent():
         self.gen_actions = gen_actions
         self.steepness=steepness
 
-    def __call__(self, state):
+    def reset(self):
+        pass
+
+    def action_policy(self, state):
         evals = self.eval_actions(state, self.gen_actions)
         if len(evals) == 0: return None
 
@@ -143,8 +149,12 @@ class StochasticGreedyAgent():
     
 
 class FirstImprovementAgent():
-    def __init__(self, gen_random_actions):
+    def __init__(self, gen_random_actions, calculate_cost_after_action):
         self.gen_random_actions = gen_random_actions
+        self.calculate_cost_after_action = calculate_cost_after_action
+        
+    def reset(self):
+        pass
 
     def action_policy(self, state):
         current_cost=state.cost
@@ -160,7 +170,8 @@ class Solver():
         self.agent = agent
 
     def solve(self, state):
-        while not state.is_complete:
+        self.agent.reset()
+        while True:
             action = self.agent.action_policy(state)
             if action is None:
                 break
