@@ -1,6 +1,12 @@
 import random
 from copy import deepcopy
 import numpy as np
+import math
+
+def sigmoid(x, k=1):
+    return 1 / (1 + math.exp(-k * x))
+
+### TSP environment
 
 class TSP_Instance:
     def __init__(self, city_locations):
@@ -25,6 +31,24 @@ class TSP_State:
         self.cost = cost
         return cost
 
+    def calculate_cost_after_action(state, action):
+        if action[0] != "2-opt": raise NotImplementedError(f"State.calculate_cost_after_action no implementado para '{action[0]}' ")
+
+        visited = state.visited
+        dist_matrix = state.inst_info.distance_matrix
+
+        n = len(visited)
+        i, j = action[1]
+        dist_actual_i = dist_matrix[visited[i]][visited[(i+1)%n]]
+        dist_actual_j = dist_matrix[visited[j]][visited[(j+1)%n]]
+        nueva_dist_i = dist_matrix[visited[i]][visited[j]]
+        nueva_dist_j = dist_matrix[visited[(i+1)%n]][visited[(j+1)%n]]
+
+        # Calcular el cambio en el costo
+        cambio_costo = (nueva_dist_i + nueva_dist_j) - (dist_actual_i + dist_actual_j)
+        new_cost = state.cost + cambio_costo
+        return new_cost
+    
     def __deepcopy__(self, memo):
         # Crear una nueva instancia de la clase
         new_instance = type(self)(
@@ -36,23 +60,23 @@ class TSP_State:
     def __str__(self):
         return f"Tour actual: {self.visited}, \nCoste total: {self.cost}"
 
-
-import numpy as np
-
 class TSP_Environment():
     @staticmethod
-    def gen_constructive_actions(state):
-        actions = [("constructive", city) for city in state.not_visited]
+    def gen_actions(state, type, random = False):
+        if type == "constructive":
+            actions = [("constructive", city) for city in state.not_visited]
+            if random:
+                random.shuffle(actions)
+        elif type == "2-opt":
+            n = len(state.visited)
+            actions = [("2-opt", (i, j)) for i in range(n - 1) for j in range(i + 2, n-1)]
+            if random:
+                random.shuffle(actions)
+        else:
+            raise NotImplementedError(f"Tipo de acción '{type}' no implementado")
+    
         for action in actions:
-	        yield action
-
-    @staticmethod
-    def gen_2opt_random_actions(state):
-      n = len(state.visited)
-      actions = [("2-opt", (i, j)) for i in range(n - 1) for j in range(i + 2, n-1)]
-      random.shuffle(actions)
-      for action in actions:
-        yield action
+            yield action
 
     @staticmethod
     def state_transition(state, action):
@@ -68,33 +92,19 @@ class TSP_Environment():
 
         # 2-opt: intercambia dos aristas del tour
         elif action[0]=="2-opt" and state.is_complete==True:
-           state.cost = calculate_cost_after_action(state, action)
+           state.cost = state.calculate_cost_after_action(action)
            i, j = action[1]
            state.visited[i+1:j+1] = reversed(state.visited[i+1:j+1])
         else:
            raise NotImplementedError(f"Movimiento '{action}' no válido para estado {state}")
 
         return state
+    
+#########################
 
-def calculate_cost_after_action(state, action):
-    visited = state.visited
-    dist_matrix = state.inst_info.distance_matrix
-
-    n = len(visited)
-    i, j = action[1]
-    dist_actual_i = dist_matrix[visited[i]][visited[(i+1)%n]]
-    dist_actual_j = dist_matrix[visited[j]][visited[(j+1)%n]]
-    nueva_dist_i = dist_matrix[visited[i]][visited[j]]
-    nueva_dist_j = dist_matrix[visited[(i+1)%n]][visited[(j+1)%n]]
-
-    # Calcular el cambio en el costo
-    cambio_costo = (nueva_dist_i + nueva_dist_j) - (dist_actual_i + dist_actual_j)
-    new_cost = state.cost + cambio_costo
-    return new_cost
-
-def evalConstructiveActions(tsp_state, gen_constructive_actions):
+def evalConstructiveActions(tsp_state, env):
     evals = []
-    for action in gen_constructive_actions(tsp_state):
+    for action in env.gen_actions(tsp_state, "constructive"):
       ultima_ciudad = tsp_state.visited[-1] if tsp_state.visited else 0
       eval = tsp_state.inst_info.distance_matrix[ultima_ciudad][action[1]]
       evals.append((action,1.0-eval))
@@ -102,37 +112,31 @@ def evalConstructiveActions(tsp_state, gen_constructive_actions):
     return evals
 
 class GreedyAgent():
-    def __init__(self, eval_actions, gen_actions):
+    def __init__(self, eval_actions):
         self.eval_actions= eval_actions
-        self.gen_actions= gen_actions
 
     def reset(self):
         pass
 
-    def action_policy(self, state):
-      evals = self.eval_actions(state, self.gen_actions)
+    def action_policy(self, state, env):
+      evals = self.eval_actions(state, env)
       if len(evals)==0: return None
 
       # Seleccionar la acción que maximiza su evaluación
       action = max(evals, key=lambda x: x[1])[0]
       return action
 
-import math
-
-def sigmoid(x, k=1):
-    return 1 / (1 + math.exp(-k * x))
 
 class StochasticGreedyAgent():
-    def __init__(self, eval_actions, gen_actions, steepness=1):
+    def __init__(self, eval_actions, env, steepness=1):
         self.eval_actions = eval_actions
-        self.gen_actions = gen_actions
         self.steepness=steepness
 
     def reset(self):
         pass
 
-    def action_policy(self, state):
-        evals = self.eval_actions(state, self.gen_actions)
+    def action_policy(self, state, env):
+        evals = self.eval_actions(state, env)
         if len(evals) == 0: return None
 
         # Normalizar las evaluaciones usando la función sigmoid
@@ -149,22 +153,21 @@ class StochasticGreedyAgent():
     
 
 class FirstImprovementAgent():
-    def __init__(self, gen_random_actions, calculate_cost_after_action):
-        self.gen_random_actions = gen_random_actions
-        self.calculate_cost_after_action = calculate_cost_after_action
-        
+    def __init__(self, action_type):
+        self.action_type = action_type
+
     def reset(self):
         pass
 
-    def action_policy(self, state):
+    def action_policy(self, state, env):
         current_cost=state.cost
-        for action in self.gen_random_actions(state):
-            new_cost = calculate_cost_after_action(state, action)
+        for action in env.gen_actions(state, self.action_type, random=True):
+            new_cost = state.calculate_cost_after_action(action)
             if current_cost-new_cost > 0:
                 return action
         return None
     
-class Solver():
+class AgentSolver():
     def __init__(self, env, agent):
         self.env = env
         self.agent = agent
@@ -172,7 +175,7 @@ class Solver():
     def solve(self, state):
         self.agent.reset()
         while True:
-            action = self.agent.action_policy(state)
+            action = self.agent.action_policy(state, self.env)
             if action is None:
                 break
             state = self.env.state_transition(state, action)
