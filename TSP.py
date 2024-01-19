@@ -62,15 +62,15 @@ class TSP_State:
 
 class TSP_Environment():
     @staticmethod
-    def gen_actions(state, type, random = False):
+    def gen_actions(state, type, shuffle = False):
         if type == "constructive":
             actions = [("constructive", city) for city in state.not_visited]
-            if random:
+            if shuffle:
                 random.shuffle(actions)
         elif type == "2-opt":
             n = len(state.visited)
             actions = [("2-opt", (i, j)) for i in range(n - 1) for j in range(i + 2, n-1)]
-            if random:
+            if shuffle:
                 random.shuffle(actions)
         else:
             raise NotImplementedError(f"Tipo de acción '{type}' no implementado")
@@ -161,7 +161,7 @@ class FirstImprovementAgent():
 
     def action_policy(self, state, env):
         current_cost=state.cost
-        for action in env.gen_actions(state, self.action_type, random=True):
+        for action in env.gen_actions(state, self.action_type, shuffle=True):
             new_cost = state.calculate_cost_after_action(action)
             if current_cost-new_cost > 0:
                 return action
@@ -172,12 +172,27 @@ class AgentSolver():
         self.env = env
         self.agent = agent
 
-    def solve(self, state):
+    def solve(self, state, track_best_state=False, save_history=False):
+        history = [(None, state.cost)]
+        best_state = None
+        
         self.agent.reset()
+        if track_best_state: best_state = deepcopy(state)
+
         while True:
             action = self.agent.action_policy(state, self.env)
             if action is None:
                 break
             state = self.env.state_transition(state, action)
-        return state
+
+            if track_best_state and state.cost < best_state.cost:
+                best_state = deepcopy(state)
+
+            if save_history:
+                history.append((action, state.cost))
+
+        if track_best_state:
+            return best_state, history
+        else:
+            return state, history
     
