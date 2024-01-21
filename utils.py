@@ -1,5 +1,17 @@
 import matplotlib.pyplot as plt
 
+def plot_int_histogram(values):
+  # Crear el histograma
+  plt.hist(values, bins=range(min(values), max(values) + 2), edgecolor='black', align='left')
+
+  # Añadir títulos y etiquetas
+  plt.title('Histograma')
+  plt.xlabel('Valores')
+  plt.ylabel('Frecuencia')
+
+  # Mostrar el histograma
+  plt.show()
+
 def plot_history(history):
   # Extracting the history records
   loss = history.history['loss']
@@ -34,3 +46,27 @@ def plot_history(history):
 
   plt.tight_layout()
   plt.show()
+
+def handle_multiple_states(func):
+    def wrapper(*args, **kwargs):
+        # Determinar cuál argumento es 'state'
+        state_arg_name = 'state'  # asumiendo que todas las funciones nombran este argumento como 'state'
+        state = kwargs.get(state_arg_name, None)
+
+        # Función auxiliar para manejar un único estado
+        def handle_single_state(single_state):
+            # Reemplaza el argumento 'state' con el estado actual
+            kwargs[state_arg_name] = single_state
+            return func(*args, **kwargs)
+
+        # Verificar si 'state' es una lista o un único estado
+        if isinstance(state, list):
+            # Aplicar 'func' a cada estado en la lista
+            return [handle_single_state(single_state) for single_state in state]
+        else:
+            # Aplicar 'func' a un único estado
+            return handle_single_state(state)
+
+    return wrapper
+
+
