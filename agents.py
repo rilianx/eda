@@ -115,7 +115,7 @@ class SingleAgentSolver():
         else:
             return state, history, n_actions
         
-    def multi_solve(self, states, track_best_state=False, save_history=False, max_actions=0):
+    def multistate_solve(self, states, track_best_state=False, save_history=False, max_actions=0):
         agents = [deepcopy(self.agent) for _ in range(len(states))]
         history = [None]*len(states)
         best_state = [None]*len(states)

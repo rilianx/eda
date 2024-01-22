@@ -1,20 +1,6 @@
 import numpy as np
 from .TSP_state import TSP_State
 
-def generate_random_points_and_distance_matrix(num_points, dim=2):
-    """
-    Genera puntos aleatorios 3D en el rango [0, 1] y calcula la matriz de distancias.
-
-    :param num_points: Número de puntos a generar.
-    :return: Tuple de (puntos, matriz de distancias)
-    """
-    # Generar puntos aleatorios
-    points = np.random.rand(num_points, dim)
-
-    # Calcular la matriz de distancias
-    distance_matrix = np.sqrt(np.sum((points[:, np.newaxis, :] - points[np.newaxis, :, :]) ** 2, axis=-1))
-
-    return points, distance_matrix
 
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
@@ -82,48 +68,3 @@ def solve(city_points, start_node=None, end_node=None, time_limit=0):
   sol_state = TSP_State(visited=visited)
   return sol_state
 
-import matplotlib.pyplot as plt
-
-def plot_tour(points, visited, start_node=False):
-    # Asegurarse de que 'visited' contiene índices válidos para 'points'
-    if not all(0 <= i < len(points) for i in visited):
-        raise ValueError("Los índices en 'visited' deben ser válidos para 'points'")
-
-    # Separar las coordenadas x e y de los puntos
-    x = [points[i][0] for i in visited]
-    y = [points[i][1] for i in visited]
-
-    # Agregar el primer punto al final para cerrar el tour
-    if start_node==False:
-      x.append(x[0])
-      y.append(y[0])
-
-    # Graficar los puntos
-    plt.scatter(x, y)
-
-    # Graficar las líneas del tour
-    plt.plot(x, y)
-
-    # Agregar títulos y etiquetas si es necesario
-    plt.title("Tour de puntos 2D")
-    plt.xlabel("Coordenada X")
-    plt.ylabel("Coordenada Y")
-
-    # Mostrar el gráfico
-    plt.show()
-
-def calculate_tour_cost(visited, distance_matrix):
-    if not visited or len(distance_matrix) == 0:
-        return 0
-
-    distance = 0
-    n_old = visited[0]
-
-    for n in visited[1:]:
-        distance += distance_matrix[n_old, n] * 10000
-        n_old = n
-
-    # Si quieres que el tour regrese al punto de inicio
-    distance += distance_matrix[n_old, visited[0]] * 10000
-
-    return distance

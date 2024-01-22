@@ -210,4 +210,32 @@ def evalConstructiveActions(state, env):
 
 
 
+import matplotlib.pyplot as plt
 
+def plot_tour(points, visited, start_node=False):
+    # Asegurarse de que 'visited' contiene índices válidos para 'points'
+    if not all(0 <= i < len(points) for i in visited):
+        raise ValueError("Los índices en 'visited' deben ser válidos para 'points'")
+
+    # Separar las coordenadas x e y de los puntos
+    x = [points[i][0] for i in visited]
+    y = [points[i][1] for i in visited]
+
+    # Agregar el primer punto al final para cerrar el tour
+    if start_node==False:
+      x.append(x[0])
+      y.append(y[0])
+
+    # Graficar los puntos
+    plt.scatter(x, y)
+
+    # Graficar las líneas del tour
+    plt.plot(x, y)
+
+    # Agregar títulos y etiquetas si es necesario
+    plt.title("Tour de puntos 2D")
+    plt.xlabel("Coordenada X")
+    plt.ylabel("Coordenada Y")
+
+    # Mostrar el gráfico
+    plt.show()
