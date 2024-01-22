@@ -52,27 +52,25 @@ class TSP_State:
 
         idx2move = dict()
         move2idx = dict()
-        origin = city_locations[self.visited[0]]
-        destination = city_locations[self.visited[-1]]
+        origin = city_locations[self.visited[-1]]
+        destination = city_locations[self.visited[0]]
 
         origin_dist = 0.0
         dest_dist = distance(origin, destination)
 
-        seq = [list(origin) + [1,0] + [origin_dist, dest_dist]] # Última ciudad visitada (origen)
+        seq = [list(origin) + [1,0] + [origin_dist, dest_dist], # Última ciudad visitada (origen)
+              list(destination) + [0, 1] + [dest_dist, 0.0]]  # Ciudad final
 
+        idx2move[0] = None
+        idx2move[1] = ("constructive", self.visited[0])
+        move2idx[self.visited[0]] = 1
 
-        idx2move[0] = ("constructive", self.visited[-1])
-        move2idx[self.visited[-1]] = 0
-
-        idx = 1
+        idx = 2
         for i in self.not_visited:
-            point = list(self.city_points[i])
+            point = list(city_locations[i])
             origin_dist = distance( point, origin)
             dest_dist = distance( point, destination)
-            if i == self.visited[0]:
-                city_vector = point + [0, 1] + [origin_dist, 0.0]  # Ciudad final
-            else:
-                city_vector = point + [0, 0] + [origin_dist, dest_dist] # Otras ciudades
+            city_vector = point + [0, 0] + [origin_dist, dest_dist] # Otras ciudades
 
             seq.append(city_vector)
             idx2move[idx] = ("constructive", i)
