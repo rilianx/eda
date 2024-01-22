@@ -51,22 +51,22 @@ def handle_multiple_states(func):
     def wrapper(*args, **kwargs):
         # Determinar cuál argumento es 'state'
         state_arg_name = 'state'  # asumiendo que todas las funciones nombran este argumento como 'state'
-        state = kwargs.get(state_arg_name, None)
+        state = args[0]
 
         # Función auxiliar para manejar un único estado
         def handle_single_state(single_state):
             # Reemplaza el argumento 'state' con el estado actual
-            kwargs[state_arg_name] = single_state
-            return func(*args, **kwargs)
+            new_args = [single_state] + list(args[1:])
+            return func(*new_args, **kwargs)
 
         # Verificar si 'state' es una lista o un único estado
         if isinstance(state, list):
             # Aplicar 'func' a cada estado en la lista
             return [handle_single_state(single_state) for single_state in state]
         else:
+
             # Aplicar 'func' a un único estado
             return handle_single_state(state)
-
     return wrapper
 
 
