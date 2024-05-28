@@ -19,12 +19,13 @@ class TSP_Instance:
 
 
 class TSP_State:
-    def __init__(self, inst_info, visited=None):
+    def __init__(self, inst_info, visited=None, final_city=-1):
         self.visited = visited if visited is not None else []
         self.not_visited = set(range(len(inst_info.distance_matrix))) - set(self.visited)
         self.is_complete = len(self.not_visited) == 0
         self.inst_info = inst_info
         self.cost = self.update_cost()  # Aquí se realiza el cálculo inicial del coste.
+        self.final_city = final_city
     
     def calculate_cost(self, visited):
         cost = 0
@@ -53,7 +54,10 @@ class TSP_State:
         idx2move = dict()
         move2idx = dict()
         origin = city_locations[self.visited[-1]]
-        destination = city_locations[self.visited[0]]
+        if self.final_city==-1:
+           destination = city_locations[self.visited[0]]
+        else: 
+           destination = city_locations[self.final_city]
 
         origin_dist = 0.0
         dest_dist = distance(origin, destination)
@@ -143,7 +147,10 @@ class TSP_Environment():
           state.not_visited.remove(action[1])
 
           if len(state.not_visited) == 0: # se completó el tour
-             state.visited.append(state.visited[0])
+             if state.final_city==-1:
+                state.visited.append(state.visited[0])
+             else:
+                state.visited.append(state.final_city)
              state.update_cost() #solo se actualiza en soluciones completas
              state.is_complete = True
 
