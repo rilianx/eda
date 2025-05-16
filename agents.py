@@ -116,7 +116,7 @@ class SingleAgentSolver():
             return state, history, n_actions
         
     def multistate_solve(self, states, track_best_state=False, save_history=False, max_actions=0):
-        agents = [deepcopy(self.agent) for _ in range(len(states))]
+        self.agents = [deepcopy(self.agent) for _ in range(len(states))]
         history = [None]*len(states)
         best_state = [None]*len(states)
         n_actions = [None]*len(states)
@@ -124,7 +124,7 @@ class SingleAgentSolver():
         if max_actions==0: max_actions = 99999999
 
         for i in range(len(states)):
-            agents[i].reset()
+            self.agents[i].reset()
             n_actions[i] = 0
             history[i] = []
             if track_best_state: best_state[i] = deepcopy(states[i])
@@ -132,14 +132,14 @@ class SingleAgentSolver():
         live_states_idx = list(range(len(states)))
 
         for _ in range(max_actions):
-            evals = agents[0].eval_actions([states[i] for i in live_states_idx], self.env)
+            evals = self.agents[0].eval_actions([states[i] for i in live_states_idx], self.env)
             
             new_idx = []
             for i in live_states_idx:
                 eval = evals[live_states_idx.index(i)]
                 if eval == []: continue
 
-                action = agents[i].select_action(eval)
+                action = self.agents[i].select_action(eval)
 
                 states[i] = self.env.state_transition(states[i], action)
                 n_actions[i]+=1
